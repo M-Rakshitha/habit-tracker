@@ -2,8 +2,10 @@ from flask import Flask, request
 import os
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 app.config['SECRET_KEY'] = "Habit-Tracker"
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///tracker.db"
@@ -20,8 +22,6 @@ with app.app_context():
   if not os.path.exists("tracker.db"):
     db.create_all()
     
-
-
 @app.route("/")
 def hello():
   return {"message": "Hello"}
