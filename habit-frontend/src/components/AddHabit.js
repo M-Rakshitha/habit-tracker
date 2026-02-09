@@ -4,10 +4,6 @@ export default function AddHabit(){
   const [name, setName] = useState('');
   const [habits, setHabits] = useState([]);
 
-  function handleClick(){
-    console.log(name);
-  }
-
   useEffect(() => {
     fetch('http://127.0.0.1:50100/habits')
       .then(res => {
@@ -17,6 +13,21 @@ export default function AddHabit(){
         setHabits(data);
       });
   }, []);
+
+  function handleClick(){
+    fetch('http://127.0.0.1:50100/habits', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: name }),
+    })
+      .then(res => res.json())
+      .then(newHabit => {
+        setHabits([...habits, newHabit]);
+        setName('');
+      });
+  }
 
   return (
   <div>
