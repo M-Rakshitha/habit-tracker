@@ -29,6 +29,20 @@ export default function AddHabit(){
       });
   }
 
+  function completeHabit(){
+
+  }
+
+  function deleteHabit(id){
+    fetch(`http://127.0.0.1:50100/habits/${id}`,{
+      method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(() => {
+      setHabits(habits.filter(h => h.id !== id));
+    });
+  }
+
   return (
   <div>
     <input
@@ -39,6 +53,8 @@ export default function AddHabit(){
     {habits.map(habit => (
     <div key={habit.id}>
       {habit.name}
+    <button>Complete</button>
+    <button onClick={() => deleteHabit(habit.id)}>Delete</button>
     </div>
 ))}
   </div>)

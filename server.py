@@ -5,7 +5,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": "http://localhost:3000",
+        "methods": ["GET", "POST", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 app.config['SECRET_KEY'] = "Habit-Tracker"
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///tracker.db"
@@ -51,8 +57,17 @@ def create_item():
 def get_habits():
   habits = Habits.query.all()
   return [ { "id": h.id, "name": h.name, "created_date": h.created_date } for h in habits ]
-  
-  
 
+@app.route('/habits/<int:id>', methods = ['DELETE'])
+def delete_habit(id):
+   habit = Habits.query.get(id)
+   
+   if habit is None: return {"error": "Habit not found"}, 404
+
+   db.session.delete(habit)
+   db.session.commit()
+
+   return {"message": f"Habit {id} deleted successfully"}
+  
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=50100, debug = True)
