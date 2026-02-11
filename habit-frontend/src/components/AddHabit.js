@@ -29,8 +29,22 @@ export default function AddHabit(){
       })
   }
   
-  function completeHabit(){
-
+  function completeHabit(id){
+    fetch(`http://127.0.0.1:50100/habits/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ completed: true }),
+    })
+      .then(res => res.json())
+      .then(updatedHabit => {
+        setHabits(
+          habits.map(h =>
+            h.id === id ? updatedHabit : h
+          )
+        );
+      });
   }
 
   function deleteHabit(id){
@@ -42,6 +56,9 @@ export default function AddHabit(){
       setHabits(habits.filter(h => h.id !== id));
     });
   }
+
+  const incompleteHabits = habits.filter(h => !h.completed);
+  const completedHabits = habits.filter(h => h.completed);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center pt-28">
@@ -74,30 +91,60 @@ export default function AddHabit(){
         </div>
       </div>
   
-      {/* Habits List */}
-      <div className="w-full max-w-2xl px-4 mt-10">
-        {habits.map(habit => (
-          <div
-            key={habit.id}
-            className="bg-white rounded-lg shadow-md p-4 mb-4 flex justify-between items-center"
+      <div className="w-full max-w-6xl mt-12 px-6 grid grid-cols-2 gap-10">
+
+  {/* Incomplete */}
+  <div>
+    <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+      Incomplete Habits
+    </h2>
+
+    {incompleteHabits.map(habit => (
+      <div
+        key={habit.id}
+        className="bg-white rounded-lg shadow-md p-4 mb-4 flex justify-between items-center"
+      >
+        <span className="text-lg text-gray-800">
+          {habit.name}
+        </span>
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => completeHabit(habit.id)}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md transition"
           >
-            <span className="text-lg text-gray-800">{habit.name}</span>
-  
-            <div className="flex gap-3">
-              <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md transition">
-                Complete
-              </button>
-              <button
-                onClick={() => deleteHabit(habit.id)}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md transition"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
+            Complete
+          </button>
+          <button
+            onClick={() => deleteHabit(habit.id)}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md transition"
+          >
+            Delete
+          </button>
+        </div>
       </div>
-  
+    ))}
+  </div>
+
+        {/* Completed */}
+        <div>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-700">
+            Completed Today
+          </h2>
+
+          {completedHabits.map(habit => (
+            <div
+              key={habit.id}
+              className="bg-green-50 border border-green-200 rounded-lg shadow-sm p-4 mb-4"
+            >
+              <span className="text-lg text-gray-500 line-through">
+                {habit.name}
+              </span>
+            </div>
+          ))}
+        </div>
+
+      </div>
     </div>
   );  
 }
