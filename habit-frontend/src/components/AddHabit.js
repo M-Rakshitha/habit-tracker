@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import HabitCard from "./HabitCard";
 
 export default function AddHabit(){
   const [name, setName] = useState('');
@@ -75,20 +76,28 @@ export default function AddHabit(){
   
       {/* Input Section */}
       <div className="w-full max-w-2xl px-4">
-        <div className="flex gap-3">
-          <input
-            className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter a habit"
-          />
-          <button
-            onClick={handleClick}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md transition duration-200"
-          >
-            Add
-          </button>
-        </div>
+      <form
+  onSubmit={(e) => {
+    e.preventDefault();     // prevents page reload
+    handleClick();
+  }}
+  className="flex gap-3"
+>
+  <input
+    className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-sm"
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+    placeholder="Enter a habit"
+  />
+
+  <button
+    type="submit"
+    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg shadow-md transition duration-200"
+  >
+    Add
+  </button>
+</form>
+
       </div>
   
       <div className="w-full max-w-6xl mt-12 px-6 grid grid-cols-2 gap-10">
@@ -96,34 +105,17 @@ export default function AddHabit(){
   {/* Incomplete */}
   <div>
     <h2 className="text-2xl font-semibold mb-4 text-gray-700">
-      Incomplete Habits
+      Habits for today
     </h2>
 
     {incompleteHabits.map(habit => (
-      <div
-        key={habit.id}
-        className="bg-white rounded-lg shadow-md p-4 mb-4 flex justify-between items-center"
-      >
-        <span className="text-lg text-gray-800">
-          {habit.name}
-        </span>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => completeHabit(habit.id)}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md transition"
-          >
-            Complete
-          </button>
-          <button
-            onClick={() => deleteHabit(habit.id)}
-            className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md transition"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    ))}
+        <HabitCard
+          key={habit.id}
+          habit={habit}
+          onComplete={completeHabit}
+          onDelete={deleteHabit}
+        />
+      ))}
   </div>
 
         {/* Completed */}
