@@ -11,7 +11,7 @@ CORS(app, resources={
     r"/*": {
         "origins": "http://localhost:3000",
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type", "Authorization"]
     }
 })
 
@@ -27,6 +27,8 @@ class Habits(db.Model):
       completed = db.Column(db.Boolean, default=False)
       habit_date = db.Column(db.Date, default=date.today)
       created_date = db.Column(db.DateTime, default=db.func.now())
+
+      user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -36,57 +38,84 @@ class User(db.Model):
 with app.app_context():
   if not os.path.exists("tracker.db"):
     db.create_all()
+
+def get_current_user():
+    auth_header = request.headers.get("Authorization")
+
+    if not auth_header:
+        return None
+
+    try:
+        token = auth_header.split(" ")[1]
+
+        data = jwt.decode(
+            token,
+            app.config["SECRET_KEY"],
+            algorithms=["HS256"]
+        )
+
+        user = User.query.get(data["user_id"])
+        return user
+
+    except:
+        return None
     
 @app.route("/")
 def hello():
   return {"message": "Hello"}
 
-@app.route("/habits", methods = ['POST'])
+@app.route("/habits", methods=['POST'])
 def create_item():
-  data = request.get_json()
+    user = get_current_user()
 
-  if not data:
-    return {"error": "Request body must be JSON"}
+    if not user:
+        return {"error": "Unauthorized"}, 401
 
-  name = data.get("name")
+    data = request.get_json()
+    name = data.get("name")
 
-  if not name:
-     return { "error": "name is required"}
+    if not name:
+        return {"error": "Name required"}, 400
 
-  habit = Habits( 
-    name = name
-  )
+    habit = Habits(
+        name=name,
+        user_id=user.id
+    )
 
-  db.session.add(habit)
-  db.session.commit()
-  
-  return {
-    "id": habit.id,
-    "name": habit.name,
-    "completed": habit.completed,
-    "habit_date": str(habit.habit_date),
-    "created_date": habit.created_date
-  }, 201
+    db.session.add(habit)
+    db.session.commit()
+
+    return {
+        "id": habit.id,
+        "name": habit.name,
+        "completed": habit.completed,
+        "habit_date": str(habit.habit_date)
+    }, 201
 
 @app.route("/habits", methods=['GET'])
 def get_habits():
+    user = get_current_user()
+
+    if not user:
+        return {"error": "Unauthorized"}, 401
+
     today = date.today()
     two_days_ago = today - timedelta(days=2)
 
-    # Find habits older than 2 days AND not completed
+    # Delete expired habits ONLY for this user
     expired_habits = Habits.query.filter(
+        Habits.user_id == user.id,
         Habits.completed == False,
         Habits.habit_date < two_days_ago
     ).all()
 
-    # Delete them
     for habit in expired_habits:
         db.session.delete(habit)
 
     db.session.commit()
 
-    # Now return remaining habits
-    habits = Habits.query.all()
+    # Return only this user's habits
+    habits = Habits.query.filter_by(user_id=user.id).all()
 
     return [
         {
@@ -99,22 +128,33 @@ def get_habits():
         for h in habits
     ]
 
-@app.route('/habits/<int:id>', methods = ['DELETE'])
+@app.route('/habits/<int:id>', methods=['DELETE'])
 def delete_habit(id):
-   habit = Habits.query.get(id)
-   
-   if habit is None: return {"error": "Habit not found"}, 404
+    user = get_current_user()
 
-   db.session.delete(habit)
-   db.session.commit()
+    if not user:
+        return {"error": "Unauthorized"}, 401
 
-   return {"message": f"Habit {id} deleted successfully"}
+    habit = Habits.query.filter_by(id=id, user_id=user.id).first()
+
+    if not habit:
+        return {"error": "Habit not found"}, 404
+
+    db.session.delete(habit)
+    db.session.commit()
+
+    return {"message": "Habit deleted successfully"}
 
 @app.route("/habits/<int:id>", methods=['PUT'])
 def update_habit(id):
-    habit = Habits.query.get(id)
+    user = get_current_user()
 
-    if habit is None:
+    if not user:
+        return {"error": "Unauthorized"}, 401
+
+    habit = Habits.query.filter_by(id=id, user_id=user.id).first()
+
+    if not habit:
         return {"error": "Habit not found"}, 404
 
     data = request.get_json()

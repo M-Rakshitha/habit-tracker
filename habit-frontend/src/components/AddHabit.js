@@ -1,40 +1,83 @@
 import React, { useEffect, useState } from 'react';
 
-export default function AddHabit(){
+export default function AddHabit({ setIsLoggedIn }) {
   const [name, setName] = useState('');
   const [habits, setHabits] = useState([]);
   const today = new Date().toLocaleDateString("en-CA");
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    fetch('http://127.0.0.1:50100/habits')
+    const token = localStorage.getItem("token");
+  
+    if (!token) {
+      setIsLoggedIn(false);
+      return;
+    }
+  
+    fetch("http://127.0.0.1:50100/habits", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
       .then(res => {
+        if (!res.ok) throw new Error("Unauthorized");
         return res.json();
       })
-      .then(data => {
-        setHabits(data);
+      .then(data => setHabits(data))
+      .catch(err => {
+        console.error("Auth failed:", err);
+        // DO NOT auto logout here for now
       });
   }, []);
 
   function handleClick() {
-    fetch('http://127.0.0.1:50100/habits', {
-      method: 'POST',
+    const token = localStorage.getItem("token");
+  
+    fetch("http://127.0.0.1:50100/habits", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({ name }),
     })
-      .then(res => res.json())
-      .then(newHabit => {
-        setHabits([...habits, newHabit]);
-        setName('');
+      .then(async res => {
+        const data = await res.json();
+  
+        if (res.status === 401) {
+          // Only logout if truly unauthorized
+          localStorage.removeItem("token");
+          setIsLoggedIn(false);
+          return;
+        }
+  
+        if (!res.ok) {
+          alert(data.error || "Something went wrong");
+          return;
+        }
+  
+        return data;
       })
-  }
+      .then(newHabit => {
+        if (!newHabit) return;
+  
+        setHabits([...habits, newHabit]);
+        setName("");
+      })
+      .catch(err => {
+        console.error("Server error:", err);
+        alert("Server error");
+      });
+  } 
   
   function completeHabit(id){
+    const token = localStorage.getItem("token");
+  
     fetch(`http://127.0.0.1:50100/habits/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({ completed: true }),
     })
@@ -49,8 +92,13 @@ export default function AddHabit(){
   }
 
   function deleteHabit(id){
+    const token = localStorage.getItem("token");
+  
     fetch(`http://127.0.0.1:50100/habits/${id}`,{
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
     })
     .then(res => res.json())
     .then(() => {
@@ -68,6 +116,16 @@ export default function AddHabit(){
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center pt-24">
+
+    <button
+      onClick={() => {
+        localStorage.removeItem("token");
+        setIsLoggedIn(false);
+      }}
+      className="absolute top-6 right-6 text-sm text-red-500"
+    >
+      Logout
+    </button>
   
       {/* Header */}
       <div className="text-center mb-12">
