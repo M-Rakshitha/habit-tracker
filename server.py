@@ -5,6 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
+from mood_service import predict_sentiment
+
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -34,6 +36,13 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+
+class JournalEntry(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    date = db.Column(db.Date, default=date.today)
+    mood_score = db.Column(db.Float, nullable=True) 
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 with app.app_context():
   if not os.path.exists("tracker.db"):
@@ -231,6 +240,38 @@ def login():
     )
 
     return {"token": token}, 200
+
+@app.route("/journal", methods=["POST"])
+def create_journal_entry():
+    user = get_current_user()
+
+    if not user:
+        return {"error": "Unauthorized"}, 401
+
+    data = request.get_json()
+    content = data.get("content")
+
+    if not content:
+        return {"error": "Journal content required"}, 400
+
+    sentiment_result = predict_sentiment(content)
+
+    entry = JournalEntry(
+        content=content,
+        mood_score=sentiment_result["confidence"], 
+        user_id=user.id
+    )
+
+    db.session.add(entry)
+    db.session.commit()
+
+    return {
+        "id": entry.id,
+        "content": entry.content,
+        "date": str(entry.date),
+        "sentiment": sentiment_result["label"],
+        "confidence": sentiment_result["confidence"]
+    }, 201
   
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=50100, debug = True)

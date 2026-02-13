@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Auth from "./components/Auth";
 import AddHabit from "./components/AddHabit";
+import Journal from "./components/Journal";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -10,7 +11,10 @@ function App() {
   return (
     <>
       {isLoggedIn ? (
-        <AddHabit setIsLoggedIn={setIsLoggedIn} />
+        <>
+          <AddHabit setIsLoggedIn={setIsLoggedIn} />
+          <Journal />
+        </>
       ) : (
         <Auth setIsLoggedIn={setIsLoggedIn} />
       )}
