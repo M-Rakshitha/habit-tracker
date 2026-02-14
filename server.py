@@ -8,6 +8,7 @@ import jwt
 from mood_service import predict_sentiment
 from vector_service import search_habits
 from vector_service import collection
+from vector_service import upsert_habit
 
 
 app = Flask(__name__)
@@ -175,8 +176,10 @@ def update_habit(id):
 
     if "completed" in data:
         habit.completed = data["completed"]
+        db.session.commit()
 
-    db.session.commit()
+        #Sync to Chroma
+        upsert_habit(habit)
 
     return {
         "id": habit.id,

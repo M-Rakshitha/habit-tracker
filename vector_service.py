@@ -21,3 +21,18 @@ def search_habits(query: str, user_id: int, n_results=5):
     )
 
     return results
+
+def upsert_habit(habit):
+    embedding = model.encode(habit.name).tolist()
+
+    collection.upsert(
+        documents=[habit.name],
+        embeddings=[embedding],
+        ids=[str(habit.id)],
+        metadatas=[{
+            "user_id": habit.user_id,
+            "completed": habit.completed,
+            "date": str(habit.habit_date)
+        }]
+    )
+
