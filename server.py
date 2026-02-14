@@ -6,6 +6,8 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from mood_service import predict_sentiment
+from vector_service import search_habits
+from vector_service import collection
 
 
 app = Flask(__name__)
@@ -136,8 +138,7 @@ def get_habits():
         }
         for h in habits
     ]
-
-@app.route('/habits/<int:id>', methods=['DELETE'])
+@app.route("/habits/<int:id>", methods=['DELETE'])
 def delete_habit(id):
     user = get_current_user()
 
@@ -149,6 +150,10 @@ def delete_habit(id):
     if not habit:
         return {"error": "Habit not found"}, 404
 
+    # Delete from vector DB
+    collection.delete(ids=[str(id)])
+
+    # Delete from SQL
     db.session.delete(habit)
     db.session.commit()
 
@@ -272,6 +277,28 @@ def create_journal_entry():
         "sentiment": sentiment_result["label"],
         "confidence": sentiment_result["confidence"]
     }, 201
+
+@app.route("/habits/search", methods=["GET"])
+def semantic_search():
+    user = get_current_user()
+
+    if not user:
+        return {"error": "Unauthorized"}, 401
+
+    query = request.args.get("q")
+
+    if not query:
+        return {"error": "Search query required"}, 400
+
+    results = search_habits(query, user.id)
+
+    documents = results.get("documents", [[]])[0]
+
+    return {
+        "query": query,
+        "results": documents
+    }
+
   
 if __name__ == '__main__':
   app.run(host='0.0.0.0', port=50100, debug = True)
