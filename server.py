@@ -303,18 +303,48 @@ def semantic_search():
 
 @app.route("/agent/chat", methods=["POST"])
 def agent_chat():
-    from agent import run_agent 
+    from agent import run_agent
+
     user = get_current_user()
     if not user:
         return {"error": "Unauthorized"}, 401
 
     data = request.get_json()
     question = data.get("question")
-
     if not question:
         return {"error": "Question is required"}, 400
 
-    response = run_agent(question, user_id=user.id, app=app)
+    # Query directly here — no import from test_tools needed
+    today = date.today()
+    week_ago = today - timedelta(days=7)
+
+    habits = Habits.query.filter(
+        Habits.user_id == user.id,
+        Habits.habit_date >= week_ago
+    ).all()
+
+    total = len(habits)
+    completed = sum(1 for h in habits if h.completed)
+    rate = (completed / total * 100) if total else 0
+
+    habit_data = str({
+        "total": total,
+        "completed": completed,
+        "incomplete": total - completed,
+        "completion_rate": rate,
+        "habits": [{"name": h.name, "completed": h.completed, "date": str(h.habit_date)} for h in habits]
+    })
+
+    entries = JournalEntry.query.filter(
+        JournalEntry.user_id == user.id,
+        JournalEntry.date >= week_ago
+    ).all()
+
+    mood_data = str({
+        "entries": [{"date": str(e.date), "mood_score": e.mood_score} for e in entries]
+    })
+
+    response = run_agent(question, habit_data=habit_data, mood_data=mood_data)
     return {"answer": response["output"]}
 
   
