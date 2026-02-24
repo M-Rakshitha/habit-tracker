@@ -10,7 +10,6 @@ from vector_service import search_habits
 from vector_service import collection
 from vector_service import upsert_habit
 
-
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
@@ -112,7 +111,7 @@ def get_habits():
         return {"error": "Unauthorized"}, 401
 
     today = date.today()
-    two_days_ago = today - timedelta(days=2)
+    two_days_ago = today - timedelta(days=7)
 
     # Delete expired habits ONLY for this user
     expired_habits = Habits.query.filter(
@@ -301,6 +300,22 @@ def semantic_search():
         "query": query,
         "results": documents
     }
+
+@app.route("/agent/chat", methods=["POST"])
+def agent_chat():
+    from agent import run_agent 
+    user = get_current_user()
+    if not user:
+        return {"error": "Unauthorized"}, 401
+
+    data = request.get_json()
+    question = data.get("question")
+
+    if not question:
+        return {"error": "Question is required"}, 400
+
+    response = run_agent(question, user_id=user.id, app=app)
+    return {"answer": response["output"]}
 
   
 if __name__ == '__main__':
