@@ -44,6 +44,7 @@ class JournalEntry(db.Model):
     content = db.Column(db.Text, nullable=False)
     date = db.Column(db.Date, default=date.today)
     mood_score = db.Column(db.Float, nullable=True) 
+    sentiment_label = db.Column(db.String(20), nullable=True) 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 with app.app_context():
@@ -266,6 +267,7 @@ def create_journal_entry():
     entry = JournalEntry(
         content=content,
         mood_score=sentiment_result["confidence"], 
+        sentiment_label=sentiment_result["label"], 
         user_id=user.id
     )
 
@@ -341,7 +343,7 @@ def agent_chat():
     ).all()
 
     mood_data = str({
-        "entries": [{"date": str(e.date), "mood_score": e.mood_score} for e in entries]
+        "entries": [{"date": str(e.date), "mood_score": e.mood_score, "label": e.sentiment_label} for e in entries]
     })
 
     response = run_agent(question, habit_data=habit_data, mood_data=mood_data)

@@ -5,9 +5,7 @@ import Journal from "./components/Journal";
 import ChatAgent from "./components/ChatComponent";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(
-    !!localStorage.getItem("token")
-  );
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
 
   return (
     <>
