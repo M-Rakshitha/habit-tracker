@@ -38,6 +38,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    full_name = db.Column(db.String(200), nullable=True) 
 
 class JournalEntry(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -48,7 +49,6 @@ class JournalEntry(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 with app.app_context():
-  if not os.path.exists("tracker.db"):
     db.create_all()
 
 def get_current_user():
@@ -192,29 +192,25 @@ def update_habit(id):
 @app.route("/signup", methods=["POST"])
 def signup():
     data = request.get_json()
-
     username = data.get("username")
     password = data.get("password")
+    full_name = data.get("full_name")  # ← Add this
 
     if not username or not password:
         return {"error": "Username and password required"}, 400
 
-    # Check if user already exists
     existing_user = User.query.filter_by(username=username).first()
     if existing_user:
         return {"error": "User already exists"}, 400
 
-    # Hash password
     hashed_password = generate_password_hash(password)
-
     new_user = User(
         username=username,
-        password=hashed_password
+        password=hashed_password,
+        full_name=full_name  # ← Add this
     )
-
     db.session.add(new_user)
     db.session.commit()
-
     return {"message": "User created successfully"}, 201
 
 @app.route("/login", methods=["POST"])
@@ -247,7 +243,7 @@ def login():
         algorithm="HS256"
     )
 
-    return {"token": token}, 200
+    return {"token": token, "full_name": user.full_name}, 200
 
 @app.route("/journal", methods=["POST"])
 def create_journal_entry():
