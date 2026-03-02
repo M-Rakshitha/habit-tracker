@@ -1,7 +1,5 @@
 # AI-Powered Habit Tracker
 
-86,400 seconds in a day. Building one good habit takes less than one decision.
-
 An intelligent full-stack habit tracking application that combines journaling, streak tracking, and AI-powered sentiment analysis to help users build positive daily habits.
 
 This project integrates HuggingFace transformer models within a Flask backend to analyze journal entries and provide mood-based feedback.
