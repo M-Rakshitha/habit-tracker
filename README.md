@@ -52,21 +52,22 @@ This project integrates HuggingFace transformer models within a Flask backend to
 
 ## Project Structure
 
+```
 habit-tracker/
+├── frontend/              # React application
+│   ├── src/
+│   └── public/
 │
-├── frontend/ # React application  
-│ ├── src/  
-│ └── public/  
-│
-├── backend/ # Flask backend  
-│ ├── app.py  
-│ ├── models.py  
-│ ├── routes/  
-│ ├── instance/  
-│ │ └── tracker.db  
-│ └── requirements.txt  
-│
-└── README.md
+├── backend/               # Flask backend
+│   ├── app.py
+│   ├── models.py
+│   ├── routes/
+│   ├── instance/
+│   │   └── tracker.db
+│   ├── requirements.txt
+│   └── README.md
+
+```
 
 ---
 
